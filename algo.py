@@ -12,10 +12,11 @@ valid_users = {
 # Function to fetch live stock data
 def fetch_live_stock_data(symbol, interval='1m'):
     try:
-        live_data = yf.download(symbol, period="1d", interval=interval, prepost=True)
+        live_data = yf.download(symbol, period="1d", interval=interval, prepost=True, utc=True)
         return live_data.copy(), None  # Return both data and None for error_message
     except Exception as e:
         return None, f"Error fetching live stock data: {str(e)}"  # Return None for data and the error message
+
 
 # Function to fetch live stock price
 def fetch_live_stock_price(symbol):
