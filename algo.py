@@ -1,17 +1,18 @@
 import yfinance as yf
-import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 import time
 from PIL import Image
-import pytz
+
+# Define a dictionary of valid usernames and passwords (replace with your own)
+valid_users = {
+    "harsh": "1234",
+}
 
 # Function to fetch live stock data
 def fetch_live_stock_data(symbol, interval='1m'):
     try:
-        live_data = yf.download(symbol, period="1d", interval=interval, prepost=True, group_by='ticker', progress=False, actions=False, threads=False, proxy=None, rounding=False)
-        live_data.index = pd.to_datetime(live_data.index)  # Ensure the index is a datetime index
-        live_data.index = live_data.index.tz_localize('UTC')  # Localize the index to UTC timezone
+        live_data = yf.download(symbol, period="1d", interval=interval, prepost=True)
         return live_data.copy(), None  # Return both data and None for error_message
     except Exception as e:
         return None, f"Error fetching live stock data: {str(e)}"  # Return None for data and the error message
@@ -95,17 +96,18 @@ def fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_p
         order_type = st.radio("Select Order Type", ["Buy", "Sell"])
 
         if order_type == "Buy" or order_type == "Sell":
-            if symbol in ["^NSEI", "^NSEBANK"]:
-                lot_size = 15
-            else:
-                lot_size = 1500
+            lot_size = get_lot_size(symbol)
             quantity = st.number_input(f"Enter Quantity (lot size: {lot_size})", min_value=1)
             if st.button("Place Order"):
-                if order_type == "Buy":
-                    order_message = f"Placed a Buy order for {quantity} lots of {symbol} at {stock_live_price:.2f} each."
-                else:
-                    order_message = f"Placed a Sell order for {quantity} lots of {symbol} at {stock_live_price:.2f} each."
+                order_message = f"Placed a {order_type} order for {quantity} lots of {symbol} at {stock_live_price:.2f} each."
                 st.success(order_message)
+
+# Function to get lot size based on the symbol
+def get_lot_size(symbol):
+    if symbol in ["^NSEI", "^NSEBANK"]:
+        return 15
+    else:
+        return 1500
 
 # Main function to run the dashboard
 def run_dashboard():
@@ -132,7 +134,7 @@ def run_dashboard():
             font-weight: bold;
         }
         </style>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
     # Define page title and header image
     st.title("Algo Trading Dashboard")
@@ -161,255 +163,34 @@ def run_dashboard():
             if selected_index == "Nifty 50":
                 symbol = '^NSEI'
                 chart_title = 'Nifty 50 Live Stock Data'
-                live_price_label = "Nifty 50 Live Price"
-
-                # Trading strategy based on opening prices (simplified)
-                nifty_open = live_data.iloc[0]['Open']
-                previous_close = live_data.iloc[0]['Close']  # Close price of the previous day
-
-                trading_suggestion = ""
-
-                if previous_close == nifty_open:
-                    trading_suggestion = "Market was sideways. Suggest to Buy."
-
-                elif previous_close < nifty_open:
-                    trading_suggestion = "Market was down, and Nifty 50 opened higher. Suggest to Buy."
-
-                elif previous_close > nifty_open:
-                    trading_suggestion = "Market was up, and Nifty 50 opened lower. Suggest to Sell."
-
+                live_price_label = 'Nifty 50 Live Price'
+                trading_suggestion = 'Suggestion for Nifty 50 trading goes here.'
                 fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
-
             elif selected_index == "Bank Nifty":
                 symbol = '^NSEBANK'
                 chart_title = 'Bank Nifty Live Stock Data'
-                live_price_label = "Bank Nifty Live Price"
-
-                # Trading strategy based on opening prices (simplified)
-                banknifty_open = live_data.iloc[0]['Open']
-                previous_close = live_data.iloc[0]['Close']  # Close price of the previous day
-
-                trading_suggestion = ""
-
-                if previous_close == banknifty_open:
-                    trading_suggestion = "Market was sideways. Suggest to Buy."
-
-                elif previous_close < banknifty_open:
-                    trading_suggestion = "Market was down, and Bank Nifty opened higher. Suggest to Buy."
-
-                elif previous_close > banknifty_open:
-                    trading_suggestion = "Market was up, and Bank Nifty opened lower. Suggest to Sell."
-
+                live_price_label = 'Bank Nifty Live Price'
+                trading_suggestion = 'Suggestion for Bank Nifty trading goes here.'
                 fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
 
-        # Stocks
-        elif view_option == "Stocks":
-            selected_stock = st.sidebar.selectbox("Select a Stock", ["RELIANCE", "TCS", "Infosys", "HDFC Bank"])
-
-            if selected_stock == "RELIANCE":
-                symbol = 'RELIANCE.BO'
-                chart_title = 'Reliance Industries Live Stock Data'
-                live_price_label = "Reliance Live Price"
-
-                # Trading strategy based on opening prices (simplified)
-                reliance_open = live_data.iloc[0]['Open']
-                previous_close = live_data.iloc[0]['Close']  # Close price of the previous day
-
-                trading_suggestion = ""
-
-                if previous_close == reliance_open:
-                    trading_suggestion = "Market was sideways. Suggest to Buy."
-
-                elif previous_close < reliance_open:
-                    trading_suggestion = "Market was down, and Reliance opened higher. Suggest to Buy."
-
-                elif previous_close > reliance_open:
-                    trading_suggestion = "Market was up, and Reliance opened lower. Suggest to Sell."
-
-                fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
-
-            elif selected_stock == "TCS":
-                symbol = 'TCS.BO'
-                chart_title = 'Tata Consultancy Services Live Stock Data'
-                live_price_label = "TCS Live Price"
-
-                # Trading strategy based on opening prices (simplified)
-                tcs_open = live_data.iloc[0]['Open']
-                previous_close = live_data.iloc[0]['Close']  # Close price of the previous day
-
-                trading_suggestion = ""
-
-                if previous_close == tcs_open:
-                    trading_suggestion = "Market was sideways. Suggest to Buy."
-
-                elif previous_close < tcs_open:
-                    trading_suggestion = "Market was down, and TCS opened higher. Suggest to Buy."
-
-                elif previous_close > tcs_open:
-                    trading_suggestion = "Market was up, and TCS opened lower. Suggest to Sell."
-
-                fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
-
-            elif selected_stock == "Infosys":
-                symbol = 'INFY.BO'
-                chart_title = 'Infosys Live Stock Data'
-                live_price_label = "Infosys Live Price"
-
-                # Trading strategy based on opening prices (simplified)
-                infosys_open = live_data.iloc[0]['Open']
-                previous_close = live_data.iloc[0]['Close']  # Close price of the previous day
-
-                trading_suggestion = ""
-
-                if previous_close == infosys_open:
-                    trading_suggestion = "Market was sideways. Suggest to Buy."
-
-                elif previous_close < infosys_open:
-                    trading_suggestion = "Market was down, and Infosys opened higher. Suggest to Buy."
-
-                elif previous_close > infosys_open:
-                    trading_suggestion = "Market was up, and Infosys opened lower. Suggest to Sell."
-
-                fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
-
-            elif selected_stock == "HDFC Bank":
-                symbol = 'HDFCBANK.BO'
-                chart_title = 'HDFC Bank Live Stock Data'
-                live_price_label = "HDFC Bank Live Price"
-
-                # Trading strategy based on opening prices (simplified)
-                hdfcbank_open = live_data.iloc[0]['Open']
-                previous_close = live_data.iloc[0]['Close']  # Close price of the previous day
-
-                trading_suggestion = ""
-
-                if previous_close == hdfcbank_open:
-                    trading_suggestion = "Market was sideways. Suggest to Buy."
-
-                elif previous_close < hdfcbank_open:
-                    trading_suggestion = "Market was down, and HDFC Bank opened higher. Suggest to Buy."
-
-                elif previous_close > hdfcbank_open:
-                    trading_suggestion = "Market was up, and HDFC Bank opened lower. Suggest to Sell."
-
-                fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
-
-        # Global Markets
-        elif view_option == "Global Markets":
-            selected_market = st.sidebar.selectbox("Select a Global Market", ["US 30", "Dow Jones", "Nasdaq", "S&P 500", "US 30 Futur"])
-
-            if selected_market == "US 30":
-                symbol = '^DJI'
-                chart_title = 'Dow Jones Industrial Average Live Data'
-                live_price_label = "Dow Jones Live Price"
-
-                # Trading strategy based on opening prices (simplified)
-                dow_open = live_data.iloc[0]['Open']
-                previous_close = live_data.iloc[0]['Close']  # Close price of the previous day
-
-                trading_suggestion = ""
-
-                if previous_close == dow_open:
-                    trading_suggestion = "Market was sideways. Suggest to Buy."
-
-                elif previous_close < dow_open:
-                    trading_suggestion = "Market was down, and Dow Jones opened higher. Suggest to Buy."
-
-                elif previous_close > dow_open:
-                    trading_suggestion = "Market was up, and Dow Jones opened lower. Suggest to Sell."
-
-                fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
-
-            elif selected_market == "Dow Jones":
-                symbol = '^DJI'
-                chart_title = 'Dow Jones Industrial Average Live Data'
-                live_price_label = "Dow Jones Live Price"
-
-                # Trading strategy based on opening prices (simplified)
-                dow_open = live_data.iloc[0]['Open']
-                previous_close = live_data.iloc[0]['Close']  # Close price of the previous day
-
-                trading_suggestion = ""
-
-                if previous_close == dow_open:
-                    trading_suggestion = "Market was sideways. Suggest to Buy."
-
-                elif previous_close < dow_open:
-                    trading_suggestion = "Market was down, and Dow Jones opened higher. Suggest to Buy."
-
-                elif previous_close > dow_open:
-                    trading_suggestion = "Market was up, and Dow Jones opened lower. Suggest to Sell."
-
-                fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
-
-            elif selected_market == "Nasdaq":
-                symbol = '^IXIC'
-                chart_title = 'Nasdaq Composite Live Data'
-                live_price_label = "Nasdaq Live Price"
-
-                # Trading strategy based on opening prices (simplified)
-                nasdaq_open = live_data.iloc[0]['Open']
-                previous_close = live_data.iloc[0]['Close']  # Close price of the previous day
-
-                trading_suggestion = ""
-
-                if previous_close == nasdaq_open:
-                    trading_suggestion = "Market was sideways. Suggest to Buy."
-
-                elif previous_close < nasdaq_open:
-                    trading_suggestion = "Market was down, and Nasdaq opened higher. Suggest to Buy."
-
-                elif previous_close > nasdaq_open:
-                    trading_suggestion = "Market was up, and Nasdaq opened lower. Suggest to Sell."
-
-                fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
-
-            elif selected_market == "S&P 500":
-                symbol = '^GSPC'
-                chart_title = 'S&P 500 Live Data'
-                live_price_label = "S&P 500 Live Price"
-
-                # Trading strategy based on opening prices (simplified)
-                sp500_open = live_data.iloc[0]['Open']
-                previous_close = live_data.iloc[0]['Close']  # Close price of the previous day
-
-                trading_suggestion = ""
-
-                if previous_close == sp500_open:
-                    trading_suggestion = "Market was sideways. Suggest to Buy."
-
-                elif previous_close < sp500_open:
-                    trading_suggestion = "Market was down, and S&P 500 opened higher. Suggest to Buy."
-
-                elif previous_close > sp500_open:
-                    trading_suggestion = "Market was up, and S&P 500 opened lower. Suggest to Sell."
-
-                fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
-
-            elif selected_market == "US 30 Futur":
-                symbol = '^DJI'
-                chart_title = 'US 30 Futures Live Data'
-                live_price_label = "US 30 Futures Live Price"
-
-                # Trading strategy based on opening prices (simplified)
-                us30fut_open = live_data.iloc[0]['Open']
-                previous_close = live_data.iloc[0]['Close']  # Close price of the previous day
-
-                trading_suggestion = ""
-
-                if previous_close == us30fut_open:
-                    trading_suggestion = "Market was sideways. Suggest to Buy."
-
-                elif previous_close < us30fut_open:
-                    trading_suggestion = "Market was down, and US 30 Futures opened higher. Suggest to Buy."
-
-                elif previous_close > us30fut_open:
-                    trading_suggestion = "Market was up, and US 30 Futures opened lower. Suggest to Sell."
-
-                fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
-
-        # Sleep for a while before updating the data again
-        time.sleep(60)  # Sleep for 60 seconds (you can adjust this as needed)
-
-if __name__ == "__main__":
-    run_dashboard()
+        # Add similar sections for "Stocks" and "Global Markets" if needed
+
+        time.sleep(60)  # Pause for 60 seconds before refreshing data
+
+# User authentication
+username = st.sidebar.text_input("Username:")
+password = st.sidebar.text_input("Password:", type="password")
+
+if st.sidebar.button("Login"):
+    if username in valid_users:
+        if password == valid_users[username]:
+            st.sidebar.success("Logged In as {}".format(username))
+            run_dashboard()
+        else:
+            st.sidebar.error("Incorrect Password")
+    else:
+        st.sidebar.error("Username not found")
+
+# Provide an option to exit the app
+if st.sidebar.button("Exit"):
+    st.sidebar.warning("Exiting the app. Have a great day!")
