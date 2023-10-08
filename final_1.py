@@ -6,7 +6,7 @@ from PIL import Image
 
 # Define a dictionary of valid usernames and passwords (replace with your own)
 valid_users = {
-    "harsh": "1234",
+    "SEH824": "1234",
 }
 
 # Function to fetch live stock data
