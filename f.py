@@ -10,6 +10,8 @@ import pytz
 def fetch_live_stock_data(symbol, interval='1m'):
     try:
         live_data = yf.download(symbol, period="1d", interval=interval, prepost=True, group_by='ticker', progress=False, actions=False, threads=False, proxy=None, rounding=False)
+        if live_data.empty:
+            return None, "No data available for the specified symbol."
         live_data.index = pd.to_datetime(live_data.index)  # Ensure the index is a datetime index
         live_data.index = live_data.index.tz_localize('UTC')  # Localize the index to UTC timezone
         return live_data.copy(), None  # Return both data and None for error_message
