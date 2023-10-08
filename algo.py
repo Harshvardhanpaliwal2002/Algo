@@ -3,6 +3,9 @@ import streamlit as st
 import plotly.graph_objects as go
 import time
 from PIL import Image
+import pandas as pd
+import pytz  # Add import for pytz
+
 
 # Define a dictionary of valid usernames and passwords (replace with your own)
 valid_users = {
@@ -13,10 +16,11 @@ valid_users = {
 def fetch_live_stock_data(symbol, interval='1m'):
     try:
         live_data = yf.download(symbol, period="1d", interval=interval, prepost=True, group_by='ticker')
+        live_data.index = live_data.index.tz_localize(pytz.UTC)  # Set the timezone to UTC
         return live_data.copy(), None  # Return both data and None for error_message
     except Exception as e:
         return None, f"Error fetching live stock data: {str(e)}"  # Return None for data and the error message
-
+        
 # Function to fetch live stock price
 def fetch_live_stock_price(symbol):
     try:
