@@ -1,26 +1,21 @@
 import yfinance as yf
+import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 import time
 from PIL import Image
-import pandas as pd
-import pytz  # Add import for pytz
-
-
-# Define a dictionary of valid usernames and passwords (replace with your own)
-valid_users = {
-    "harsh": "1234",
-}
+import pytz
 
 # Function to fetch live stock data
 def fetch_live_stock_data(symbol, interval='1m'):
     try:
-        live_data = yf.download(symbol, period="1d", interval=interval, prepost=True, group_by='ticker')
-        live_data.index = live_data.index.tz_localize(pytz.UTC)  # Set the timezone to UTC
+        live_data = yf.download(symbol, period="1d", interval=interval, prepost=True, group_by='ticker', progress=False, actions=False, threads=False, proxy=None, rounding=False)
+        live_data.index = pd.to_datetime(live_data.index)  # Ensure the index is a datetime index
+        live_data.index = live_data.index.tz_localize('UTC')  # Localize the index to UTC timezone
         return live_data.copy(), None  # Return both data and None for error_message
     except Exception as e:
         return None, f"Error fetching live stock data: {str(e)}"  # Return None for data and the error message
-        
+
 # Function to fetch live stock price
 def fetch_live_stock_price(symbol):
     try:
@@ -137,7 +132,7 @@ def run_dashboard():
             font-weight: bold;
         }
         </style>
-        """, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
     # Define page title and header image
     st.title("Algo Trading Dashboard")
@@ -392,30 +387,29 @@ def run_dashboard():
                 fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
 
             elif selected_market == "US 30 Futur":
-                symbol = 'YM=F'
-                chart_title = 'Dow Jones Industrial Average Futures Live Data'
-                live_price_label = "Dow Jones Futures Live Price"
+                symbol = '^DJI'
+                chart_title = 'US 30 Futures Live Data'
+                live_price_label = "US 30 Futures Live Price"
 
                 # Trading strategy based on opening prices (simplified)
-                dow_future_open = live_data.iloc[0]['Open']
+                us30fut_open = live_data.iloc[0]['Open']
                 previous_close = live_data.iloc[0]['Close']  # Close price of the previous day
 
                 trading_suggestion = ""
 
-                if previous_close == dow_future_open:
+                if previous_close == us30fut_open:
                     trading_suggestion = "Market was sideways. Suggest to Buy."
 
-                elif previous_close < dow_future_open:
-                    trading_suggestion = "Market was down, and Dow Jones Futures opened higher. Suggest to Buy."
+                elif previous_close < us30fut_open:
+                    trading_suggestion = "Market was down, and US 30 Futures opened higher. Suggest to Buy."
 
-                elif previous_close > dow_future_open:
-                    trading_suggestion = "Market was up, and Dow Jones Futures opened lower. Suggest to Sell."
+                elif previous_close > us30fut_open:
+                    trading_suggestion = "Market was up, and US 30 Futures opened lower. Suggest to Sell."
 
                 fetch_and_display_stock_data(symbol, chart_title, trading_suggestion, live_price_label, ema_periods)
 
-        # Wait for a few seconds before updating the data (you can change the sleep duration)
-        time.sleep(30)
+        # Sleep for a while before updating the data again
+        time.sleep(60)  # Sleep for 60 seconds (you can adjust this as needed)
 
-# Run the dashboard
 if __name__ == "__main__":
     run_dashboard()
